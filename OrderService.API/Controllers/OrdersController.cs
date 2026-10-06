@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrderService.API.Data;
 using OrderService.API.Models;
@@ -54,18 +54,15 @@ public class OrdersController : ControllerBase
             return BadRequest(
                 "Quantity must be greater than zero.");
 
-        // 1. ProductService-dən məhsulu alırıq
         var product = await _productService
             .GetProductAsync(request.ProductId);
 
         if (product is null)
             return BadRequest("Product not found.");
 
-        // 2. Stock yoxlayırıq
         if (product.Stock < request.Quantity)
             return BadRequest("Not enough stock.");
 
-        // 3. Order yaradırıq
         var order = new Order
         {
             ProductId = product.Id,
@@ -80,7 +77,6 @@ public class OrdersController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        // 4. ProductService-ə stock azalt deyirik
         var stockReduced =
             await _productService.ReduceStockAsync(
                 product.Id,
@@ -96,15 +92,22 @@ public class OrdersController : ControllerBase
                 "Order could not be completed because stock update failed.");
         }
 
-        // 5. NotificationService çağırılır
-        await _notificationService.SendAsync(
-            new NotificationRequest
-            {
-                OrderId = order.Id,
-                ProductName = order.ProductName,
-                Quantity = order.Quantity,
-                TotalPrice = order.TotalPrice
-            });
+        try
+        {
+            await _notificationService.SendAsync(
+                new NotificationRequest
+                {
+                    OrderId = order.Id,
+                    ProductName = order.ProductName,
+                    Quantity = order.Quantity,
+                    TotalPrice = order.TotalPrice,
+                    Email = request.Email
+                });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Email could not be sent: {ex.Message}");
+        }
 
         return CreatedAtAction(
             nameof(GetById),

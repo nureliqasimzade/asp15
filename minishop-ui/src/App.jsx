@@ -16,6 +16,8 @@ function App() {
 
   const [loading, setLoading] = useState(false);
 
+  const [email, setEmail] = useState("");
+
   const loadProducts = async () => {
 
     try {
@@ -38,7 +40,22 @@ function App() {
 
   }, []);
 
+  const isValidEmail = (value) => {
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  };
+
   const handleOrder = async (product) => {
+
+    if (!isValidEmail(email)) {
+
+      setMessage(
+        "Please enter a valid email before ordering."
+      );
+
+      return;
+    }
 
     const quantityText = window.prompt(
       `How many ${product.name} do you want?`,
@@ -70,11 +87,12 @@ function App() {
 
       const order = await createOrder(
         product.id,
-        quantity
+        quantity,
+        email
       );
 
       setMessage(
-        `Order #${order.id} created successfully. Total: ${order.totalPrice} AZN`
+        `Order #${order.id} created successfully. Total: ${order.totalPrice} AZN. Confirmation email sent to ${email}`
       );
 
       await loadProducts();
@@ -103,6 +121,25 @@ function App() {
           Microservices Demo
         </p>
       </header>
+
+      <div style={{ margin: "20px 0" }}>
+
+        <input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{
+            width: "100%",
+            maxWidth: "400px",
+            padding: "10px",
+            fontSize: "16px",
+            borderRadius: "8px",
+            border: "1px solid #ccc"
+          }}
+        />
+
+      </div>
 
       {message && (
         <div className="message">
